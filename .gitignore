@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Project artifacts
+*.db
+*.sarif
+.vulnerable.py
+
+# NOVA internal cache
+.nova/
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,15 @@
+# Minimum severity level to cause a non-zero exit code (critical, high, medium, low)
+fail_on_severity: high
+
+# List of glob patterns or paths to ignore during scanning
+ignore_paths: []
+
+# List of rule sets, rules, or rule configurations to enable
+enabled_rules:
+  - auto
+
+# Optional path to a SARIF baseline file for diffing findings
+baseline_path: null
+
+# Output format for scan findings (sarif, console, json)
+output_format: sarif

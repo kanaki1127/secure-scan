@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cli*", "analyzers*", "output*", "compliance*", "storage*", "web*", "config*"]
+
+[project]
+name = "secure-scan"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "sqlalchemy",
+    "pyyaml",
+    "semgrep>=1.182.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+secure-scan = "cli.main:main"

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>secure-scan dashboard</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1100px; margin: 2em auto; padding: 0 1em; }
+    h1 { color: #2c3e50; }
+    form { margin: 1em 0; }
+    input[type="text"] { width: 400px; padding: 6px; }
+    button { padding: 6px 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; font-size: 14px; }
+    th { background: #f4f6f8; }
+    .severity-critical { color: #fff; background: #c0392b; padding: 2px 6px; border-radius: 3px; }
+    .severity-high     { color: #fff; background: #e67e22; padding: 2px 6px; border-radius: 3px; }
+    .severity-medium   { color: #fff; background: #f1c40f; padding: 2px 6px; border-radius: 3px; }
+    .severity-low      { color: #fff; background: #3498db; padding: 2px 6px; border-radius: 3px; }
+    .scans { margin-top: 2em; font-size: 13px; }
+    .empty { color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>secure-scan dashboard</h1>
+
+  <form id="scan-form">
+    <input type="text" id="target-input" name="target_path" placeholder="Path to scan (e.g. . or config)" required>
+    <button type="submit">Scan</button>
+  </form>
+
+  <h2>Findings</h2>
+  {% if findings %}
+  <table>
+    <thead>
+      <tr><th>Severity</th><th>File</th><th>Line</th><th>Rule</th><th>CWE</th><th>Fix</th></tr>
+    </thead>
+    <tbody>
+      {% for f in findings %}
+      <tr>
+        <td><span class="severity-{{ f.severity }}">{{ f.severity }}</span></td>
+        <td>{{ f.file_path }}</td>
+        <td>{{ f.line }}</td>
+        <td>{{ f.rule_id }}</td>
+        <td>{{ f.cwe or "-" }}</td>
+        <td>{{ f.remediation or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No findings yet. Run a scan above.</p>
+  {% endif %}
+
+  <div class="scans">
+    <h2>Past scans</h2>
+    {% if scans %}
+    <ul>
+      {% for s in scans %}
+      <li>{{ s.created_at }} — {{ s.target_path }} — {{ s.total_findings }} findings ({{ s.status }})</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty">No scans yet.</p>
+    {% endif %}
+  </div>
+
+  <script>
+    document.getElementById('scan-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const target = document.getElementById('target-input').value;
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = 'Scanning...';
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+      try {
+        const res = await fetch('/scan', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({target_path: target}),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          let errorMsg = `Server error (${res.status})`;
+          try {
+            const errData = await res.json();
+            if (errData && errData.detail) {
+              errorMsg += `: ${errData.detail}`;
+            }
+          } catch (_) {
+            const errText = await res.text();
+            if (errText) errorMsg += `: ${errText}`;
+          }
+          throw new Error(errorMsg);
+        }
+
+        window.location.reload();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          alert('Error: The scan request timed out after 60 seconds.');
+        } else {
+          alert('Error: ' + err.message);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Scan';
+      }
+    });
+  </script>
+</body>
+</html>
